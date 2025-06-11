@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>_SR_Off_ Browser</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    .github-login-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+    .github-btn {
+      background-color: #24292e;
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      position: relative;
+    }
+    .repo-list {
+      display: none;
+      position: absolute;
+      top: 110%;
+      left: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      min-width: 200px;
+      z-index: 1000;
+    }
+    .repo-list a {
+      display: block;
+      padding: 8px;
+      color: #0366d6;
+      text-decoration: none;
+      border-bottom: 1px solid #eee;
+    }
+    .github-btn:hover .repo-list {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="github-login-container">
+    <button id="githubBtn" class="github-btn">
+      Se connecter à GitHub
+      <div id="repoList" class="repo-list"></div>
+    </button>
+  </div>
+
+  <!-- Ton code existant -->
+  <h1>Made By _SR_Off_</h1>
+  <p>_SR_Off_ Browser</p>
+  <!-- etc. -->
+  <script>
+    const clientId = 'Ov23liN9hAGyOQTFjmxA'; // à remplacer
+    const redirectUri = window.location.origin + window.location.pathname;
+
+    // Récupérer le code d'autorisation GitHub si redirigé
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('code')) {
+      exchangeCodeForToken(params.get('code'));
+    }
+
+    async function exchangeCodeForToken(code) {
+      // Tu dois passer par ton propre backend pour échanger ce code,
+      // GitHub ne permet pas d'utiliser directement client_secret côté client.
+      const resp = await fetch('/github-oauth-callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await resp.json();
+      const token = data.access_token;
+      if (token) fetchRepos(token);
+    }
+
+    async function fetchRepos(token) {
+      const resp = await fetch('https://api.github.com/user/repos', {
+        headers: { Authorization: 'token ' + token }
+      });
+      const repos = await resp.json();
+      const repoList = document.getElementById('repoList');
+      repoList.innerHTML = repos.map(r =>
+        `<a href="${r.html_url}" target="_blank">${r.name}</a>`
+      ).join('');
+      document.getElementById('githubBtn').textContent = 'Mes projets';
+      // Ré-intégrer la div du menu après textContent
+      document.getElementById('githubBtn').appendChild(repoList);
+    }
+
+    document.getElementById('githubBtn').addEventListener('click', () => {
+      const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo`;
+      window.location.href = url;
+    });
+  </script>
+</body>
+</html>
